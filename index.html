@@ -120,6 +120,41 @@
     }
     @keyframes spin{to{transform:rotate(360deg)}}
     .hidden{display:none}
+    .modal{
+      position:fixed;inset:0;background:rgba(0,0,0,.7);
+      backdrop-filter:blur(8px);display:flex;align-items:center;
+      justify-content:center;z-index:999;padding:20px;
+    }
+    .modal-card{
+      background:var(--card);border:1px solid var(--line);
+      border-radius:var(--radius);max-width:600px;width:100%;
+      max-height:90vh;overflow-y:auto;
+    }
+    .modal-header{
+      padding:20px;border-bottom:1px solid var(--line);
+      display:flex;justify-content:space-between;align-items:center;
+    }
+    .modal-title{font-size:18px;font-weight:700}
+    .modal-body{padding:20px}
+    .form-field{margin-bottom:16px}
+    .form-field label{
+      display:block;font-size:12px;font-weight:700;
+      color:var(--muted);margin-bottom:6px;
+    }
+    .form-field input,.form-field select,.form-field textarea{
+      width:100%;padding:10px 12px;border-radius:12px;
+      border:1px solid var(--line);background:rgba(15,23,48,.55);
+      color:var(--text);font-size:13px;
+    }
+    .form-field input:focus,.form-field select:focus,.form-field textarea:focus{
+      outline:none;border-color:var(--brand);
+    }
+    .checkbox-group{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .checkbox-item{
+      display:flex;gap:8px;padding:10px;border-radius:12px;
+      background:rgba(15,23,48,.35);border:1px solid var(--line);
+    }
+    .checkbox-item input{width:auto}
   </style>
 </head>
 <body>
@@ -143,6 +178,42 @@
           console.error('Error:', error);
           return [];
         }
+      },
+      
+      async uploadFile(projectId, fileName, fileData) {
+        try {
+          const response = await fetch(APPS_SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'uploadFile',
+              projectId: projectId,
+              fileName: fileName,
+              fileData: fileData
+            })
+          });
+          return await response.json();
+        } catch (error) {
+          console.error('Upload error:', error);
+          return { error: error.message };
+        }
+      },
+      
+      async createProject(projectData) {
+        try {
+          await fetch(APPS_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'createProject',
+              project: projectData
+            })
+          });
+          return { success: true };
+        } catch (error) {
+          return { error: error.message };
+        }
       }
     };
 
@@ -152,6 +223,7 @@
       const [projects, setProjects] = useState([]);
       const [selectedProject, setSelectedProject] = useState(null);
       const [loading, setLoading] = useState(true);
+      const [showModal, setShowModal] = useState(false);
 
       useEffect(() => {
         loadProjects();
@@ -173,6 +245,28 @@
         setView('dashboard');
         setSelectedProject(null);
       }
+      
+      async function handleCreateProject(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const tasks = [];
+        formData.getAll('tasks').forEach(t => tasks.push(t));
+        
+        const projectData = {
+          name: formData.get('name'),
+          domain: formData.get('domain'),
+          region: formData.get('region').split(' · ')[0],
+          language: formData.get('region').split(' · ')[1],
+          seedKeywords: formData.get('keywords'),
+          tasks: tasks
+        };
+        
+        alert('Creating project...');
+        await api.createProject(projectData);
+        setShowModal(false);
+        alert('Project created! Refreshing...');
+        setTimeout(() => loadProjects(), 2000);
+      }
 
       const stats = {
         total: projects.length,
@@ -190,7 +284,7 @@
               React.createElement('p', null, 'Automated SEO workflows')
             )
           ),
-          React.createElement('button', { className: 'btn primary' }, '+ Add Project')
+          React.createElement('button', { className: 'btn primary', onClick: () => setShowModal(true) }, '+ Add Project')
         ),
 
         // Dashboard View
@@ -281,17 +375,94 @@
 
           React.createElement('h2', { style: { fontSize: '18px', fontWeight: '700', marginBottom: '16px' } }, 'Tasks'),
 
-          (selectedProject.Tasks ? selectedProject.Tasks.split(', ') : []).map((taskName, i) =>
-            React.createElement('div', { key: i, className: 'task-card' },
+          (selectedProject.Tasks ? selectedProject.Tasks.split(', ') : []).map((taskName, i) => {
+            const handleFileUpload = async (e) => {
+              const file = e.target.files[0];
+              if (!file) return;
+              
+              const reader = new FileReader();
+              reader.onload = async (event) => {
+                const base64 = event.target.result.split(',')[1];
+                
+                alert('Uploading file...');
+                const result = await api.uploadFile(selectedProject.ID, file.name, base64);
+                
+                if (result.success) {
+                  alert(`✅ File "${file.name}" uploaded successfully!`);
+                } else {
+                  alert(`❌ Upload failed: ${result.error}`);
+                }
+              };
+              reader.readAsDataURL(file);
+            };
+            
+            return React.createElement('div', { key: i, className: 'task-card' },
               React.createElement('div', { className: 'task-title' }, `🔍 ${taskName}`),
+              React.createElement('input', {
+                type: 'file',
+                accept: '.csv',
+                id: `file-${i}`,
+                style: { display: 'none' },
+                onChange: handleFileUpload
+              }),
               React.createElement('div', { style: { marginTop: '16px', display: 'flex', gap: '10px' } },
-                React.createElement('button', { className: 'btn' }, '📤 Upload CSV'),
+                React.createElement('button', {
+                  className: 'btn',
+                  onClick: () => document.getElementById(`file-${i}`).click()
+                }, '📤 Upload CSV'),
                 React.createElement('button', { className: 'btn primary' }, '▶️ Run'),
                 React.createElement('a', {
                   href: selectedProject['Working Sheet URL'],
                   target: '_blank',
                   className: 'btn'
                 }, '📊 Results')
+              )
+            );
+          })
+        ),
+        
+        // Modal
+        showModal && React.createElement('div', { className: 'modal', onClick: () => setShowModal(false) },
+          React.createElement('div', { className: 'modal-card', onClick: (e) => e.stopPropagation() },
+            React.createElement('div', { className: 'modal-header' },
+              React.createElement('div', { className: 'modal-title' }, 'Create New Project'),
+              React.createElement('button', { className: 'btn', onClick: () => setShowModal(false) }, 'Close')
+            ),
+            React.createElement('div', { className: 'modal-body' },
+              React.createElement('form', { onSubmit: handleCreateProject },
+                React.createElement('div', { className: 'form-field' },
+                  React.createElement('label', null, 'Project Name'),
+                  React.createElement('input', { name: 'name', required: true, placeholder: 'e.g. My SEO Project' })
+                ),
+                React.createElement('div', { className: 'form-field' },
+                  React.createElement('label', null, 'Domain'),
+                  React.createElement('input', { name: 'domain', required: true, placeholder: 'e.g. example.com' })
+                ),
+                React.createElement('div', { className: 'form-field' },
+                  React.createElement('label', null, 'Region / Language'),
+                  React.createElement('select', { name: 'region', required: true },
+                    React.createElement('option', null, 'USA · EN'),
+                    React.createElement('option', null, 'UK · EN'),
+                    React.createElement('option', null, 'UAE · EN'),
+                    React.createElement('option', null, 'UA · UK')
+                  )
+                ),
+                React.createElement('div', { className: 'form-field' },
+                  React.createElement('label', null, 'Seed Keywords (optional)'),
+                  React.createElement('textarea', { name: 'keywords', rows: 3, placeholder: 'One per line' })
+                ),
+                React.createElement('div', { className: 'form-field' },
+                  React.createElement('label', null, 'Select Tasks'),
+                  React.createElement('div', { className: 'checkbox-group' },
+                    ['Audit', 'Competitors', 'Clustering', 'Mapping', 'Blog', 'Backlog'].map(task =>
+                      React.createElement('div', { key: task, className: 'checkbox-item' },
+                        React.createElement('input', { type: 'checkbox', name: 'tasks', value: task, defaultChecked: ['Audit', 'Clustering', 'Backlog'].includes(task) }),
+                        React.createElement('span', null, task)
+                      )
+                    )
+                  )
+                ),
+                React.createElement('button', { type: 'submit', className: 'btn primary', style: { width: '100%', marginTop: '16px' } }, 'Create Project')
               )
             )
           )
