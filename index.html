@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SEO Ops Dashboard v2</title>
+  <style>
+    :root {
+      --bg:#0b1020;--card:#101a33;--text:#e9eefc;--muted:#a9b4d6;
+      --line:rgba(255,255,255,.10);--brand:#7c5cff;--brand2:#5fd6ff;
+      --ok:#33d17a;--warn:#ffcc66;--shadow:0 18px 60px rgba(0,0,0,.35);
+      --radius:18px;--sans:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body,#root{height:100%}
+    body{
+      font-family:var(--sans);color:var(--text);
+      background:radial-gradient(900px 600px at 15% 10%,rgba(124,92,255,.25),transparent 55%),
+                 radial-gradient(900px 600px at 85% 20%,rgba(95,214,255,.16),transparent 55%),
+                 linear-gradient(180deg,#070a14 0%,var(--bg) 70%);
+    }
+    a{color:inherit;text-decoration:none}
+    .container{max-width:1400px;margin:0 auto;padding:28px 20px 60px}
+    .header{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:16px 20px;border:1px solid var(--line);border-radius:22px;
+      background:rgba(16,26,51,.65);backdrop-filter:blur(10px);
+      box-shadow:var(--shadow);margin-bottom:24px;
+    }
+    .logo-section{display:flex;align-items:center;gap:14px;cursor:pointer}
+    .logo{
+      width:42px;height:42px;border-radius:14px;
+      background:linear-gradient(135deg,var(--brand),var(--brand2));
+      box-shadow:0 14px 40px rgba(124,92,255,.25);
+    }
+    .logo-text h1{font-size:15px;font-weight:700;margin-bottom:2px}
+    .logo-text p{font-size:12px;color:var(--muted)}
+    .btn{
+      appearance:none;border:1px solid var(--line);
+      background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));
+      color:var(--text);padding:11px 16px;border-radius:14px;cursor:pointer;
+      display:inline-flex;align-items:center;gap:10px;font-weight:600;font-size:13px;
+      transition:all 0.2s;
+    }
+    .btn:hover{border-color:rgba(255,255,255,.18);transform:translateY(-1px)}
+    .btn.primary{
+      border-color:rgba(124,92,255,.40);
+      background:linear-gradient(135deg,rgba(124,92,255,.95),rgba(95,214,255,.70));
+      box-shadow:0 16px 50px rgba(124,92,255,.22);color:#0b1020;
+    }
+    .btn.primary:hover{filter:brightness(1.05)}
+    .project-grid{
+      display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
+      gap:18px;margin-top:20px;
+    }
+    .project-card{
+      border:1px solid var(--line);border-radius:var(--radius);
+      background:rgba(16,26,51,.55);backdrop-filter:blur(10px);padding:20px;
+      cursor:pointer;transition:all 0.3s;box-shadow:var(--shadow);
+    }
+    .project-card:hover{
+      border-color:rgba(124,92,255,.4);transform:translateY(-2px);
+      box-shadow:0 24px 80px rgba(0,0,0,.4);
+    }
+    .project-header{display:flex;align-items:flex-start;gap:12px;margin-bottom:16px}
+    .project-icon{
+      width:48px;height:48px;border-radius:12px;
+      background:linear-gradient(135deg,rgba(124,92,255,.2),rgba(95,214,255,.1));
+      display:flex;align-items:center;justify-content:center;font-size:24px;
+    }
+    .project-info{flex:1}
+    .project-name{font-size:16px;font-weight:700;margin-bottom:4px}
+    .project-url{font-size:12px;color:var(--muted);font-family:monospace}
+    .task-chip{
+      padding:5px 10px;border-radius:999px;
+      background:rgba(124,92,255,.12);border:1px solid rgba(124,92,255,.3);
+      font-size:11px;font-weight:700;display:inline-block;margin:4px 4px 4px 0;
+    }
+    .status-badge{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:6px 12px;border-radius:999px;font-size:11px;font-weight:800;
+    }
+    .status-badge.ready{
+      background:rgba(51,209,122,.15);color:var(--ok);
+      border:1px solid rgba(51,209,122,.3);
+    }
+    .task-card{
+      border:1px solid var(--line);border-radius:var(--radius);
+      background:rgba(16,26,51,.55);padding:24px;margin-bottom:18px;
+    }
+    .task-title{font-size:18px;font-weight:700;margin-bottom:6px}
+    .breadcrumb{
+      display:flex;align-items:center;gap:8px;margin-bottom:20px;
+      font-size:13px;color:var(--muted);
+    }
+    .breadcrumb a{color:var(--brand2);cursor:pointer}
+    .breadcrumb a:hover{color:var(--text)}
+    .stats-grid{
+      display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+      gap:16px;margin-bottom:28px;
+    }
+    .stat-card{
+      border:1px solid var(--line);border-radius:16px;
+      padding:18px;background:rgba(15,23,48,.55);
+    }
+    .stat-label{
+      font-size:11px;color:var(--muted);font-weight:900;
+      text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;
+    }
+    .stat-value{font-size:28px;font-weight:900;margin-bottom:4px}
+    .stat-hint{font-size:12px;color:var(--muted)}
+    .loading{
+      display:flex;align-items:center;justify-content:center;
+      padding:60px;font-size:14px;color:var(--muted);
+    }
+    .spinner{
+      width:24px;height:24px;border:3px solid rgba(124,92,255,.2);
+      border-top-color:var(--brand);border-radius:50%;
+      animation:spin 1s linear infinite;margin-right:12px;
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .hidden{display:none}
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <script>
+    const { useState, useEffect } = React;
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby45jWRVJTjqwuUnqWcHim3bHvyESaPsl-uqLgAT4mMyRxaFki2xwbOz3QIOoBa7qA9yg/exec';
+
+    // API
+    const api = {
+      async getProjects() {
+        try {
+          const response = await fetch(`${APPS_SCRIPT_URL}?action=getProjects&t=${Date.now()}`);
+          const data = await response.json();
+          return data.projects || [];
+        } catch (error) {
+          console.error('Error:', error);
+          return [];
+        }
+      }
+    };
+
+    // Main App
+    function App() {
+      const [view, setView] = useState('dashboard');
+      const [projects, setProjects] = useState([]);
+      const [selectedProject, setSelectedProject] = useState(null);
+      const [loading, setLoading] = useState(true);
+
+      useEffect(() => {
+        loadProjects();
+      }, []);
+
+      async function loadProjects() {
+        setLoading(true);
+        const data = await api.getProjects();
+        setProjects(data);
+        setLoading(false);
+      }
+
+      function openProject(project) {
+        setSelectedProject(project);
+        setView('project');
+      }
+
+      function backToDashboard() {
+        setView('dashboard');
+        setSelectedProject(null);
+      }
+
+      const stats = {
+        total: projects.length,
+        running: projects.filter(p => p.Status === 'Running').length,
+        needsInput: projects.filter(p => p.Status === 'Needs input').length
+      };
+
+      return React.createElement('div', { className: 'container' },
+        // Header
+        React.createElement('div', { className: 'header' },
+          React.createElement('div', { className: 'logo-section', onClick: backToDashboard },
+            React.createElement('div', { className: 'logo' }),
+            React.createElement('div', { className: 'logo-text' },
+              React.createElement('h1', null, 'SEO Ops Dashboard'),
+              React.createElement('p', null, 'Automated SEO workflows')
+            )
+          ),
+          React.createElement('button', { className: 'btn primary' }, '+ Add Project')
+        ),
+
+        // Dashboard View
+        view === 'dashboard' && React.createElement('div', null,
+          // Stats
+          React.createElement('div', { className: 'stats-grid' },
+            React.createElement('div', { className: 'stat-card' },
+              React.createElement('div', { className: 'stat-label' }, 'Active Projects'),
+              React.createElement('div', { className: 'stat-value' }, stats.total),
+              React.createElement('div', { className: 'stat-hint' }, 'Total in database')
+            ),
+            React.createElement('div', { className: 'stat-card' },
+              React.createElement('div', { className: 'stat-label' }, 'Running Now'),
+              React.createElement('div', { className: 'stat-value', style: { color: 'var(--brand2)' } }, stats.running),
+              React.createElement('div', { className: 'stat-hint' }, 'AI generating')
+            ),
+            React.createElement('div', { className: 'stat-card' },
+              React.createElement('div', { className: 'stat-label' }, 'Needs Input'),
+              React.createElement('div', { className: 'stat-value', style: { color: 'var(--warn)' } }, stats.needsInput),
+              React.createElement('div', { className: 'stat-hint' }, 'Upload CSV')
+            )
+          ),
+
+          React.createElement('h2', { style: { fontSize: '20px', fontWeight: '700', marginBottom: '18px' } }, 'Your Projects'),
+
+          loading ? React.createElement('div', { className: 'loading' },
+            React.createElement('div', { className: 'spinner' }),
+            'Loading projects...'
+          ) : React.createElement('div', { className: 'project-grid' },
+            projects.map(project => {
+              const tasks = project.Tasks ? project.Tasks.split(', ') : [];
+              return React.createElement('div', {
+                key: project.ID,
+                className: 'project-card',
+                onClick: () => openProject(project)
+              },
+                React.createElement('div', { className: 'project-header' },
+                  React.createElement('div', { className: 'project-icon' }, '🌐'),
+                  React.createElement('div', { className: 'project-info' },
+                    React.createElement('div', { className: 'project-name' }, project['Project Name']),
+                    React.createElement('div', { className: 'project-url' }, project.Domain)
+                  )
+                ),
+                React.createElement('div', { style: { marginBottom: '14px' } },
+                  tasks.slice(0, 3).map((task, i) =>
+                    React.createElement('div', { key: i, className: 'task-chip' }, task)
+                  )
+                ),
+                React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+                  React.createElement('div', { className: 'status-badge ready' }, project.Status),
+                  React.createElement('button', {
+                    className: 'btn',
+                    onClick: (e) => { e.stopPropagation(); openProject(project); }
+                  }, 'Open →')
+                )
+              );
+            })
+          )
+        ),
+
+        // Project View
+        view === 'project' && selectedProject && React.createElement('div', null,
+          React.createElement('div', { className: 'breadcrumb' },
+            React.createElement('a', { onClick: backToDashboard }, 'Dashboard'),
+            React.createElement('span', null, '/'),
+            React.createElement('span', null, selectedProject['Project Name'])
+          ),
+
+          React.createElement('h1', { style: { fontSize: '28px', fontWeight: '700', marginBottom: '8px' } },
+            selectedProject['Project Name']
+          ),
+          React.createElement('div', { style: { fontSize: '14px', color: 'var(--muted)', marginBottom: '24px' } },
+            selectedProject.Domain
+          ),
+
+          React.createElement('div', { style: { display: 'flex', gap: '12px', marginBottom: '28px' } },
+            React.createElement('a', {
+              href: `https://drive.google.com/drive/folders/${selectedProject['Drive Folder ID']}`,
+              target: '_blank',
+              className: 'btn'
+            }, '📂 Drive'),
+            React.createElement('a', {
+              href: selectedProject['Working Sheet URL'],
+              target: '_blank',
+              className: 'btn'
+            }, '📊 Sheet')
+          ),
+
+          React.createElement('h2', { style: { fontSize: '18px', fontWeight: '700', marginBottom: '16px' } }, 'Tasks'),
+
+          (selectedProject.Tasks ? selectedProject.Tasks.split(', ') : []).map((taskName, i) =>
+            React.createElement('div', { key: i, className: 'task-card' },
+              React.createElement('div', { className: 'task-title' }, `🔍 ${taskName}`),
+              React.createElement('div', { style: { marginTop: '16px', display: 'flex', gap: '10px' } },
+                React.createElement('button', { className: 'btn' }, '📤 Upload CSV'),
+                React.createElement('button', { className: 'btn primary' }, '▶️ Run'),
+                React.createElement('a', {
+                  href: selectedProject['Working Sheet URL'],
+                  target: '_blank',
+                  className: 'btn'
+                }, '📊 Results')
+              )
+            )
+          )
+        )
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(React.createElement(App));
+  </script>
+</body>
+</html>
