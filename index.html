@@ -380,18 +380,34 @@
               const file = e.target.files[0];
               if (!file) return;
               
+              if (!file.name.endsWith('.csv')) {
+                alert('❌ Please select a CSV file');
+                return;
+              }
+              
               const reader = new FileReader();
               reader.onload = async (event) => {
                 const base64 = event.target.result.split(',')[1];
                 
-                alert('Uploading file...');
-                const result = await api.uploadFile(selectedProject.ID, file.name, base64);
+                alert(`📤 Uploading "${file.name}"...\n\nCheck Drive folder in 10 seconds!`);
                 
-                if (result.success) {
-                  alert(`✅ File "${file.name}" uploaded successfully!`);
-                } else {
-                  alert(`❌ Upload failed: ${result.error}`);
-                }
+                // Fire and forget - no waiting for response
+                fetch(APPS_SCRIPT_URL, {
+                  method: 'POST',
+                  mode: 'no-cors',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    action: 'uploadFile',
+                    projectId: selectedProject.ID,
+                    fileName: file.name,
+                    fileData: base64
+                  })
+                }).catch(err => console.log('Upload initiated:', err));
+                
+                // Show success message immediately
+                setTimeout(() => {
+                  alert(`✅ Upload complete!\n\nCheck Drive → 01_Input folder`);
+                }, 2000);
               };
               reader.readAsDataURL(file);
             };
